@@ -19,14 +19,12 @@ void main(void){
     while(1){
         if(PORTAbits.RA2==0){
             while(TRMT1==0);
-            PORTB=chr;
             TXREG1=chr;
             chr++;
             while(PORTAbits.RA2==0);
         }
         if(PORTAbits.RA3==0){
             while(TRMT1==0);
-            PORTB=0;
             TXREG1=0x0C;
             chr=0x30;
             while(PORTAbits.RA3==0);
