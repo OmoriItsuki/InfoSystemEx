@@ -1,0 +1,188 @@
+﻿library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
+
+entity timerAdv is
+	port(clk6in:in std_logic;
+	SW_in:in std_logic_vector(2 downto 0);
+	digit_out:out std_logic_vector(3 downto 0);
+	segment_out:out std_logic_vector(7 downto 0);
+	dot : out std_logic);
+end timerAdv;
+
+architecture RTL of timerAdv is
+signal RST_in : std_logic;
+signal SW : std_logic_vector(2 downto 0);
+signal digit : std_logic_vector(3 downto 0);
+signal segment : std_logic_vector(7 downto 0);
+signal disp_en : std_logic;
+signal disp_scan : std_logic_vector(1 downto 0);
+signal disp_char : std_logic_vector(3 downto 0);
+signal dotp:std_logic;
+signal SEC_disp : std_logic_vector(15 downto 0);
+signal clk6 : std_logic;
+signal MHz_div : std_logic_vector(2 downto 0);
+signal MHz_puls : std_logic;
+signal KHz_div : std_logic_vector(9 downto 0);
+signal KHz_puls : std_logic;
+signal Hz_div : std_logic_vector(9 downto 0);
+signal Hz_puls : std_logic;
+signal SEC0_count : std_logic_vector(3 downto 0);
+signal SEC10_count : std_logic_vector(3 downto 0);
+signal SEC100_count : std_logic_vector(3 downto 0);
+signal SEC1000_count : std_logic_vector(3 downto 0);
+signal COUNT_PLS : std_logic;
+signal COUNT_EN : std_logic;
+begin
+	clk6 <= clk6in;
+	digit_out <= digit;
+	SW <= SW_in;
+	segment_out <= segment;
+
+	RST_in <= not(SW(0));
+
+	process(CLK6, RST_in)
+	begin
+		if (RST_in = '1')then
+			MHz_div <= (others => '0');
+			MHz_puls <= '0';
+		elsif(CLK6'event and CLK6 = '1')then
+			MHz_div <= MHz_div + 1;
+			if (MHz_div = "101")then
+				MHz_puls <= '1';
+				MHz_div <= (others => '0');
+			else
+				MHz_puls <= '0';
+			end if;
+		end if;
+	end process;
+
+	process(CLK6, RST_in)
+	begin
+		if (RST_in = '1')then
+			KHz_div <= (others => '0');
+			KHz_puls <= '0';
+		elsif(CLK6'event and CLK6 = '1')then
+			if (MHz_puls = '1')then
+				KHz_div <= KHz_div + 1;
+				if (KHz_div="1111100111")then
+					KHz_puls <= '1';
+					KHz_div <= (others => '0');
+				end if;
+			else
+				KHz_puls <= '0';
+			end if;
+		end if;
+	end process;
+
+	process(CLK6, RST_in)
+		begin
+		if (RST_in = '1')then
+			Hz_div <= (others => '0');
+			Hz_puls <= '0';
+		elsif(CLK6'event and CLK6 = '1')then
+			if (KHz_puls = '1')then
+				Hz_div <= Hz_div + 1;
+				if (Hz_div = "1001")then
+					Hz_puls <= '1';
+					Hz_div <= (others => '0');
+				end if;
+			else
+				Hz_puls <= '0';
+			end if;
+		end if;
+	end process;
+
+	COUNT_PLS <= Hz_puls;
+	COUNT_EN <= '1';
+
+	process(CLK6, RST_in)
+		begin
+		if (RST_in = '1')then
+			SEC0_count <= (others => '0');
+			SEC10_count <= (others => '0');
+			SEC100_count <= (others => '0');
+			SEC1000_count <= (others => '0');
+		elsif(CLK6 'event and CLK6='1')then
+			if (COUNT_EN = '1')then
+				if (COUNT_PLS = '1')then
+					if (SEC0_count = "1001")then
+						SEC0_count <= (others => '0');
+						if (SEC10_count = "1001")then
+							SEC10_count <= (others => '0');
+							if (SEC100_count = "1001")then
+								SEC100_count <= (others => '0');
+								if (SEC1000_count = "0101")then
+									SEC1000_count <= (others => '0');
+								else
+									SEC1000_count <= SEC1000_count + 1;
+								end if;
+							else
+								SEC100_count <= SEC100_count + 1;
+							end if;
+						else
+							SEC10_count <= SEC10_count + 1;
+						end if;
+					else
+						SEC0_count <= SEC0_count + 1;
+					end if;
+				end if;
+			end if;
+		end if;
+		end process;
+
+	SEC_disp(3 downto 0) <= SEC0_count;
+	SEC_disp(7 downto 4) <= SEC10_count;
+	SEC_disp(11 downto 8) <= SEC100_count;
+	SEC_disp(15 downto 12) <= SEC1000_count;
+
+	process(CLK6, RST_in)
+		begin
+		if (RST_in = '1')then
+			segment <= (others => '1');
+			digit <= (others => '1');
+			disp_en <= '0';
+			disp_scan <= (others => '0');
+			disp_char <= (others => '0');
+			dotp <= '1';
+		elsif(CLK6 'event and CLK6 = '1')then
+			disp_en <= '1';
+			if (KHz_puls = '1')then
+				disp_scan <= disp_scan + 1;
+			end if;
+
+			case disp_scan is
+				when "00" => disp_char <= SEC_disp(3 downto 0); digit <= "ZZZ0";dot <= '1';
+				when "01" => disp_char <= SEC_disp(7 downto 4); digit <= "ZZ0Z";dot <= '1';
+				when "10" => disp_char <= SEC_disp(11 downto 8); digit <= "Z0ZZ";dot <= '0';
+				when others => disp_char <= SEC_disp(15 downto 12); digit <= "0ZZZ";dot <= '1';
+			end case;
+
+			if (disp_en = '1')then
+				dotp <= '1';
+				case disp_char is
+					when"0000" => segment <= "1000000" & dotp;
+					when"0001" => segment <= "1111001" & dotp;
+					when"0010" => segment <= "0100100" & dotp;
+					when"0011" => segment <= "0110000" & dotp;
+					when"0100" => segment <= "0011001" & dotp;
+					when"0101" => segment <= "0010010" & dotp;
+					when"0110" => segment <= "0000010" & dotp;
+					when"0111" => segment <= "1011000" & dotp;
+					when"1000" => segment <= "0000000" & dotp;
+					when"1001" => segment <= "0010000" & dotp;
+					when"1010" => segment <= "0001000" & dotp;
+					when"1011" => segment <= "0000011" & dotp;
+					when"1100" => segment <= "0100111" & dotp;
+					when"1101" => segment <= "0100001" & dotp;
+					when"1110" => segment <= "0000110" & dotp;
+					when"1111" => segment <= "0001110" & dotp;
+					when others => NULL;
+				end case;
+			else
+				segment <= "1111111" & dotp;
+			end if;
+		end if;
+	end process;
+end RTL;

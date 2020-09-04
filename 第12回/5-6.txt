@@ -1,0 +1,29 @@
+﻿library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_unsigned.all;
+
+entity HexCounter_TOP is
+    port (
+		CLK_in : in std_logic;
+		RST_in : in std_logic;
+		Q_out : out std_logic_vector(3 downto 0)
+    );
+end HexCounter_TOP;
+
+architecture behavioral of HexCounter_TOP is
+    signal Qbuff : std_logic_vector(3 downto 0);
+begin
+    process (CLK_in)
+    begin
+        if(CLK_in 'event and CLK_in = '0') then
+            if (RST_in = '0') then
+                Qbuff <= (others => '0');
+            elsif(Qbuff = "1111") then
+                Qbuff <= (others => '0');
+            else
+                Qbuff <= Qbuff + '1';
+            end if;
+        end if;
+    end process;
+    Q_out <= not Qbuff;
+end behavioral;

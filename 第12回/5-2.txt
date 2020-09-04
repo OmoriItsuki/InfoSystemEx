@@ -1,0 +1,16 @@
+﻿library ieee;
+use ieee.std_logic_1164.all;
+
+entity full_adder_TOP is 
+	port(a :in std_logic;
+	b :in std_logic;
+	ci :in std_logic;
+	co :out std_logic;
+	s :out  std_logic);
+end full_adder_TOP;
+
+architecture behavioral of full_adder_TOP is 
+begin 
+	co <= ((a and b) or ((a or b) and ci));
+	s <= not(not a xor not b xor not ci);
+end behavioral;

@@ -1,0 +1,24 @@
+﻿library ieee;
+use ieee.std_logic_1164.all;
+
+entity DFF_with_SyncRST_TOP is
+	port(CLK_in : in std_logic;
+	D_in :in std_logic;
+	RST_in :in std_logic;
+	Q_out :out std_logic);
+end DFF_with_SyncRST_TOP;
+
+architecture behavioral of DFF_with_SyncRST_TOP is
+begin
+	process(CLK_in, RST_in
+	)
+	begin
+		if(CLK_in 'event and CLK_in = '1') then
+			if (RST_in = '0') then
+				Q_out <= '0';
+			else
+				Q_out <= D_in;
+			end if;
+		end if;
+	end process;
+end behavioral;
