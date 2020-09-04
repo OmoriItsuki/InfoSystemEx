@@ -1,0 +1,26 @@
+﻿library ieee;
+use ieee.std_logic_1164.all;
+
+entity 5_4 is
+    port(
+    S_in : in std_logic;
+    CLK_in :in std_logic;
+    RST_in :in std_logic;
+    P_out :out std_logic_vector(7 downto 0));
+end 5_4;
+
+architecture behavioral of 5_4 is
+    signal Qbuff:std_logic_vector(7 downto 0);
+begin
+    process(CLK_in, RST_in)
+    begin
+        if (RST_in = '0') then
+            Qbuff <= (others => '0');
+        else
+            if(CLK_in 'event and CLK_in = '1') then
+                Qbuff <= Qbuff(6 downto 0) & S_in;
+            end if;
+        end if;
+    end process;
+    P_out <= Qbuff;
+end behavioral;

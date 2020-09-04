@@ -1,0 +1,12 @@
+﻿library ieee;
+use ieee.std_logic_1164.all;
+
+entity 5-1 is
+	port(a,b : in std_logic;
+		y : out std_logic);
+end 5-1;
+
+architecture behavioral of 5-1 is
+begin
+	y <= a and b;
+end behavioral;
